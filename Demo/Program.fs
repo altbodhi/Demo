@@ -31,20 +31,34 @@ let createHandler (transformer:Transformer <'TState, 'TCommand, 'TEvent, 'TError
 
 let tf: Transformer<int, Command, Event, Error> = {
         ZeroState = 0;
+
         Reducer = fun s e ->
                 match e with
-                | Incremented v -> s + v
-                | Decremented v -> s - v;
+                | Incremented v -> v 
+                | Decremented v -> v
+
         Producer = fun s c ->
                 match c with
                 | Increment -> Ok(Incremented (s + 1))
                 | Decrement -> Ok (Decremented (s - 1))
         }
-         
+
+let mutable data = 0;   
+             
+let loader () = async {
+    return seq { yield data }
+}
+
+let commit (id, version) = async {
+    data <- id
+}
+        
+let handler = createHandler (tf,loader, commit)
 
 open System
 
 [<EntryPoint>]
 let main argv =
-    printfn "Hello World from F#!"
+
+    loader() |> printfn "%A"
     0 // return an integer exit code
